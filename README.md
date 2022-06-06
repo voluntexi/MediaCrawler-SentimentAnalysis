@@ -7,4 +7,4 @@
 
 **使用方法：**
 
-安装好所需要的库和chormedriver，然后运行init_code里的exe.py
+安装好所需要的库和chromedriver，然后运行init_code里的exe.py
