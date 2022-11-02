@@ -312,7 +312,7 @@ emotion={
     '[不看]':  -1,
     '[中国赞]':0
 }
-alpha = 0.5   # 不确定的情感值极性前后判断因素的比例，默认为0.5
+alpha = 0.75   # 不确定的情感值极性前后判断因素的比例，默认为0.5
 dict_of_emtion={}
 dict_of_adv={}
 list_of_negative=[]
@@ -538,5 +538,3 @@ def calculation(txt):
     readNegative()
     totalSenti=calSim(txt)
     return totalSenti
-print(calculation(["我不太不开心"]))
-print(calculation(["我太不开心"]))

@@ -13,7 +13,7 @@ import datetime
 import urllib3
 from multiprocessing.dummy import Pool as ThreadPool
 '''
-功能：爬取微博用户ID、用户名、用户评论 以及微博的原文
+功能：爬取微博用户ID、Comment_Name、用户评论 以及微博的原文
 使用方法：
 在WeiboCrawler(url):函数中 输入爬取的网站的网址 即可实现信息的爬取
 在爬取完毕后会将数据以EXCEL表的形式存入当前目录，命名为：WeiboComment.xls
@@ -38,23 +38,21 @@ headers_1 = {
 headers_2 = {
 				  'Accept-Encoding': 'gzip, deflate, sdch',
 				 'Accept-Language': 'en-US,en;q=0.8',
-				 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
+				 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36'
+							   ' (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
 				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
 				 'Referer': 'https://m.weibo.cn/',
 			    'Connection': 'keep-alive',
 				'Cookie': cookie_2,
 				}
-headers_list=[headers_1,headers_2]#列表
+headers_list=[headers_2,headers_2]#列表
 topic=""
 def require(url,headers):
 	"""获取网页源码"""
 	while True:
 		try:
 			response = requests.get(url, headers=headers,timeout=(20,50),verify=False)
-			#print(url)
 			code_1=response.status_code
-			#print(type(code_1))
-			# t.sleep(random.randint(1,2))
 			if code_1==200:
 				print('正常爬取中，状态码：'+str(code_1))#状态码
 				t.sleep(random.randint(1,2))
@@ -66,9 +64,6 @@ def require(url,headers):
 		except:
 			t.sleep(random.randint(2,3))
 			continue
-
-	#print(response.encoding)#首选编码
-	#response.encoding=response.apparent_encoding
 	html=response.text#源代码文本
 	return html
 
@@ -109,7 +104,7 @@ def body(h_1,j):#提取主体
 	user_ids=re.findall('<a href=".*?&amp;fuid=(.*?)&amp;.*?">举报</a> ',html_2,re.S)#从举报链接入手
 	
 	names_0=re.findall('<a href=.*?>(.*?)</a>',html_2,re.S)
-	names=[]#用户名
+	names=[]#Comment_Name
 	ma=[ '举报', '赞[]', '回复']
 	pattern = re.compile(r'\d+')#匹配数字
 	for i in names_0:
@@ -121,8 +116,8 @@ def body(h_1,j):#提取主体
 	pattern_0= re.compile(r'回复<a href=.*?</a>:')#匹配回复前缀
 	pattern_0_1= re.compile(r'<a href=.*?</a>')#匹配回复内容后面的表情图片地址
 	pattern_0_2= re.compile(r'<img alt=.*?/>')#匹配回复内容的图片地址
-	contents=[]#评论内容
-	contents_2=[]#评论内容初步
+	contents=[]#Comment_Content
+	contents_2=[]#Comment_Content初步
 	contents_0=re.findall('<span class="ctt">(.*?)</span>',html_2,re.S)#一级
 	contents_1=re.findall('<a href=.*?>@.*?</a>(.*?)<a href=.*?>举报</a> ',html_2,re.S)#二级
 
@@ -156,19 +151,22 @@ def body(h_1,j):#提取主体
 	for i in times_0:
 		try:
 			t_1= re.match(pattern_1, i).group()
+			t_1=t_1.replace("月","-")
+			t_1=t_1.replace("日","-")
+			t_1="2022-"+t_1
 		except:
-			a=datetime.datetime.now().strftime('%m%d')
-			t_1=a[:2]+'月'+a[2:]+'日'#改为当天
+			a=datetime.datetime.now().strftime('%Y-%m-%d')
+			t_1=a#改为当天
 		times.append(t_1)
 	
 	all=[]
 	for i in range(len(user_ids)):#这有问题
 		try:
-			al=[user_ids[i],names[i],contents[i]]
+			al=[user_ids[i],names[i],contents[i],times[i]]
 		except:
 			j='空'
 			contents.append(j)
-			al=[user_ids[i],names[i],contents[i]]
+			al=[user_ids[i],names[i],contents[i],times[i]]
 		all.append(al)
 	return all
 
@@ -176,9 +174,10 @@ def save_afile(alls,filename):
     """将一个微博评论数据保存在一个excle"""
     f=xlwt.Workbook()
     sheet1=f.add_sheet(u'sheet1',cell_overwrite_ok=True)
-    sheet1.write(0,0,'用户ID')
-    sheet1.write(0,1,'用户名')
-    sheet1.write(0,2,'评论内容')
+    sheet1.write(0,0,'Comment_ID')
+    sheet1.write(0,1,'Comment_Name')
+    sheet1.write(0,2,'Comment_Content')
+    sheet1.write(0,2,'Comment_Time')
     # sheet1.write(0,3,'时间')
     i=1
     for all in alls:
@@ -233,7 +232,7 @@ def run(url):
 				htmls,pages=html_1(url_1,headers)
 				alls.append(body(htmls,j))
 	print('原微博共计'+str(page)+'页,爬取了'+str(count(alls))+'个数据')
-	save_afile(alls,"WeiboComment")
+	save_afile(alls,"weibo_comment")
 	print('爬取的评论数据文件、保存完毕')
 	return topic
 
@@ -244,9 +243,6 @@ def WeiboCrawler(url):
 	url = url[: -7]
 	topic=run(url)
 	return topic
-# WeiboCrawler("https://weibo.cn/comment/LoTvUdkly?uid=1883881851&rl=0&gid=10001#cmtfrm")
-
-		
-		
+WeiboCrawler("https://weibo.cn/comment/LtrluFgJl?uid=2803301701&rl=0&gid=10001")
 
 
